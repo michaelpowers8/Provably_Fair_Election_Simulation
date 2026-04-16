@@ -1,3 +1,4 @@
+import json
 import random
 import numpy as np
 
@@ -55,14 +56,13 @@ STATES_DATA = [
 ]
 
 TURNOUT = 0.7 # Percent voters
-MOMENTUM = 0.8 # Potential swing average at a national level
-MOMENTUM_VOLATILITY = 1
-REP_CANDIDATE_ENERGY = 0.1 # How motivating republican candidate gets voter turnout. Higher number means more Republican turnout
-DEM_CANDIDATE_ENERGY = 0.3 # How motivating democrat candidate gets voter turnout. Higher number means more Democrat turnout
-CANDIDATE_VOLATILITY = 0.3
+MOMENTUM = 1.5 # Potential swing average at a national level
+MOMENTUM_VOLATILITY = 2
+REP_CANDIDATE_ENERGY = -0.7 # How motivating republican candidate gets voter turnout. Higher number means more Republican turnout
+DEM_CANDIDATE_ENERGY = 0.4 # How motivating democrat candidate gets voter turnout. Higher number means more Democrat turnout
+CANDIDATE_VOLATILITY = 1.2
 
-def main():
-    state = STATES_DATA[2]
+def process_state(state):
     state_votes_cast = np.random.normal(state[2]*TURNOUT,state[2]*0.02)
     margin = (np.random.normal(state[3],0.015)+ # Typical margin of error
                 np.random.normal(MOMENTUM,MOMENTUM_VOLATILITY)-
@@ -74,22 +74,47 @@ def main():
         rep_pct = 0.5 - (margin/2)
         dem_votes = round(state_votes_cast*dem_pct)
         rep_votes = state_votes_cast - dem_votes
+        dem_electoral_votes = state[1]
+        rep_electoral_votes = 0
     elif(margin < 0):
         rep_pct = 0.5 - (margin/2)
         dem_pct = 0.5 + (margin/2)
         rep_votes = round(state_votes_cast*rep_pct)
         dem_votes = state_votes_cast - rep_votes
+        dem_electoral_votes = 0
+        rep_electoral_votes = state[1]
     else:    
         rep_pct = 0.5
         dem_pct = 0.5
         rep_votes = state_votes_cast//2
         dem_votes = rep_votes
+        dem_electoral_votes = 0
+        rep_electoral_votes = 0
         
-    print(f"{state[0]}:\n" +
-    f"Democrat Votes: {dem_votes:,.0f}\n" +
-    f"Republican Votes: {rep_votes:,.0f}\n" +
-    f"Democrat Percent: {dem_pct*100:,.3f}%\n" +
-    f"Republican Percent: {rep_pct*100:,.3f}%\n")
+    return {
+        "Dem_Votes": dem_votes,
+        "Rep_Votes": rep_votes,
+        "Dem_Percent": dem_pct,
+        "Rep_Percent": rep_pct,
+        "Dem_Electoral_Votes": dem_electoral_votes,
+        "Rep_Electoral_Votes": dem_electoral_votes,
+    }
 
+
+def main():
+    rep_electoral_votes = 0
+    dem_electoral_votes = 0
+    rep_total_votes = 0
+    dem_total_votes = 0
+    state_results = []
+    for state in STATES_DATA:
+        state_result = process_state(state)
+        state_results.append(state_result)
+        rep_electoral_votes += state_vote_result["Rep_Electoral_Votes"]
+        dem_electoral_votes += state_vote_result["Dem_Electoral_Votes"]
+        rep_total_votes += state_vote_result["Rep_Votes"]
+        dem_total_votes += state_vote_result["Dem_Votes"]
+    print(json.dumps(state_results,indent=4))
+        
 if __name__ == "__main__":
     main()
