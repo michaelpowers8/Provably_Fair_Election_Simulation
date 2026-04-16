@@ -57,12 +57,12 @@ STATES_DATA = [
 ]
 
 TURNOUT = 0.65 # Percent voters
-MOMENTUM = 0 # Potential swing average at a national level. 0 is no swinging favorability
-MOMENTUM_VOLATILITY = 1
+MOMENTUM = -3 # Potential swing average at a national level
+MOMENTUM_VOLATILITY = 4
 MOMENTUM_DISTRIBUTION = np.random.normal(MOMENTUM,MOMENTUM_VOLATILITY)
-REP_CANDIDATE_ENERGY = 0 # How motivating republican candidate gets voter turnout. Higher number means more Republican turnout
-DEM_CANDIDATE_ENERGY = 0 # How motivating democrat candidate gets voter turnout. Higher number means more Democrat turnout
-CANDIDATE_VOLATILITY = 1
+REP_CANDIDATE_ENERGY = 4 # How motivating republican candidate gets voter turnout. Higher number means more Republican turnout
+DEM_CANDIDATE_ENERGY = -2 # How motivating democrat candidate gets voter turnout. Higher number means more Democrat turnout
+CANDIDATE_VOLATILITY = 4
 REP_CANDIDATE_DISTRIBUTION = np.random.normal(REP_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)
 DEM_CANDIDATE_DISTRIBUTION = np.random.normal(DEM_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)
 
@@ -83,7 +83,9 @@ class Election_Results:
         self.dem_total_votes:int = dem_total_votes
     
     def __str__(self):
-        return f"{self.dem_electoral_votes:,.0f} - {self.rep_electoral_votes:,.0f}"
+        return f"Winner: {self.winner}\n\n" \
+        f"Electoral College (Democrat - Republican):\n{self.dem_electoral_votes:,.0f} - {self.rep_electoral_votes:,.0f}\n\n"\
+        f"Popular Vote (Democratic - Republican)\n{self.dem_total_votes:,.0f} - {self.rep_total_votes:,.0f}\n\n"
 
 def process_state(state):
     state_votes_cast = max(np.random.normal(state[2]*TURNOUT,state[2]*0.1),0)
@@ -169,8 +171,8 @@ def main():
         else:
             winners[election_results[-1].winner] += 1
     print(json.dumps(winners,indent=4))
-    # print(election_results[0])
-    # print(json.dumps(election_results[0].state_results,indent=4))
+    # print(election_results)
+    print(election_results[0])
     # print(json.dumps(election_results, indent=4))
         
 if __name__ == "__main__":
