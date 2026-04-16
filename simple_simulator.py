@@ -62,12 +62,13 @@ DEM_CANDIDATE_ENERGY = 0 # How motivating democrat candidate gets voter turnout.
 CANDIDATE_VOLATILITY = 0.2
 
 def main():
-    state = STATES_DATA[0]
+    state = STATES_DATA[2]
     state_votes_cast = np.random.normal(state[2]*TURNOUT,state[2]*0.02)
-    margin = np.random.normal(state[3],0.015)+\ # Typical margin of error
-                np.random.normal(MOMENTUM,MOMENTUM_VOLATILITY)-\
-                np.random.normal(REP_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)+\
-                np.random.normal(DEM_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)
+    margin = (np.random.normal(state[3],0.015)+ # Typical margin of error
+                np.random.normal(MOMENTUM,MOMENTUM_VOLATILITY)-
+                np.random.normal(REP_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)+
+                np.random.normal(DEM_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY))
+    margin /= 100
     if(margin > 0): # Democrat won state
         dem_pct = 0.5 + (margin/2)
         rep_pct = 0.5 - (margin/2)
@@ -84,7 +85,7 @@ def main():
         rep_votes = state_votes_cast//2
         dem_votes = rep_votes
         
-    print(f"{state[0]:\n" +
+    print(f"{state[0]}:\n" +
     f"Democrat Votes: {dem_votes:,.0f}\n" +
     f"Republican Votes: {rep_votes:,.0f}\n" +
     f"Democrat Percent: {dem_pct*100:,.3f}%\n" +
