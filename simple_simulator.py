@@ -58,11 +58,11 @@ STATES_DATA = [
 
 TURNOUT = 0.65 # Percent voters
 MOMENTUM = -3 # Potential swing average at a national level
-MOMENTUM_VOLATILITY = 4
+MOMENTUM_VOLATILITY = 2
 MOMENTUM_DISTRIBUTION = np.random.normal(MOMENTUM,MOMENTUM_VOLATILITY)
-REP_CANDIDATE_ENERGY = 4 # How motivating republican candidate gets voter turnout. Higher number means more Republican turnout
-DEM_CANDIDATE_ENERGY = -2 # How motivating democrat candidate gets voter turnout. Higher number means more Democrat turnout
-CANDIDATE_VOLATILITY = 4
+REP_CANDIDATE_ENERGY = 3 # How motivating republican candidate gets voter turnout. Higher number means more Republican turnout
+DEM_CANDIDATE_ENERGY = 0 # How motivating democrat candidate gets voter turnout. Higher number means more Democrat turnout
+CANDIDATE_VOLATILITY = 2
 REP_CANDIDATE_DISTRIBUTION = np.random.normal(REP_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)
 DEM_CANDIDATE_DISTRIBUTION = np.random.normal(DEM_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)
 
@@ -173,7 +173,7 @@ def main():
     print(json.dumps(winners,indent=4))
     # print(election_results)
     print(election_results[0])
-    # print(json.dumps(election_results, indent=4))
+    print(json.dumps(election_results[0].state_results, indent=4))
         
 if __name__ == "__main__":
     main()
