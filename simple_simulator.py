@@ -1,4 +1,5 @@
 import random
+import numpy as np
 
 STATES_DATA = [
     ("Alabama", 9, 3700000, -25.5),
@@ -55,9 +56,39 @@ STATES_DATA = [
 
 TURNOUT = 0.7 # Percent voters
 MOMENTUM = 3.6 # Potential swing average at a national level
-REP_CANDIDATE_ENERGY = 0 # How motivating republican candidate gets voter turnout
-DEM_CANDIDATE_ENERGY = 0 # How motivating democrat candidate gets voter turnout
+MOMENTUM_VOLATILITY = 0.6
+REP_CANDIDATE_ENERGY = 0 # How motivating republican candidate gets voter turnout. Higher number means more Republican turnout
+DEM_CANDIDATE_ENERGY = 0 # How motivating democrat candidate gets voter turnout. Higher number means more Democrat turnout
+CANDIDATE_VOLATILITY = 0.2
 
-state = STATES_DATA[0]
-state_turnout = 
-total_votes_cast = state[2]
+def main():
+    state = STATES_DATA[0]
+    state_votes_cast = np.random.normal(state[2]*TURNOUT,state[2]*0.02)
+    margin = np.random.normal(state[3],0.015)+\ # Typical margin of error
+                np.random.normal(MOMENTUM,MOMENTUM_VOLATILITY)-\
+                np.random.normal(REP_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)+\
+                np.random.normal(DEM_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)
+    if(margin > 0): # Democrat won state
+        dem_pct = 0.5 + (margin/2)
+        rep_pct = 0.5 - (margin/2)
+        dem_votes = round(state_votes_cast*dem_pct)
+        rep_votes = state_votes_cast - dem_votes
+    elif(margin < 0):
+        rep_pct = 0.5 + (margin/2)
+        dem_pct = 0.5 - (margin/2)
+        rep_votes = round(state_votes_cast*rep_pct)
+        dem_votes = state_votes_cast - rep_votes
+    else:    
+        rep_pct = 0.5
+        dem_pct = 0.5
+        rep_votes = state_votes_cast//2
+        dem_votes = rep_votes
+        
+    print(f"{state[0]:\n" +
+    f"Democrat Votes: {dem_votes:,.0f}\n" +
+    f"Republican Votes: {rep_votes:,.0f}\n" +
+    f"Democrat Percent: {dem_pct*100:,.3f}%\n" +
+    f"Republican Percent: {rep_pct*100:,.3f}%\n")
+
+if __name__ == "__main__":
+    main()
