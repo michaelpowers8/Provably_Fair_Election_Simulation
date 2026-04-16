@@ -92,12 +92,13 @@ def process_state(state):
         rep_electoral_votes = 0
         
     return {
+        "State": state[0],
         "Dem_Votes": dem_votes,
         "Rep_Votes": rep_votes,
         "Dem_Percent": dem_pct,
         "Rep_Percent": rep_pct,
         "Dem_Electoral_Votes": dem_electoral_votes,
-        "Rep_Electoral_Votes": dem_electoral_votes,
+        "Rep_Electoral_Votes": rep_electoral_votes,
     }
 
 
@@ -110,11 +111,13 @@ def main():
     for state in STATES_DATA:
         state_result = process_state(state)
         state_results.append(state_result)
-        rep_electoral_votes += state_vote_result["Rep_Electoral_Votes"]
-        dem_electoral_votes += state_vote_result["Dem_Electoral_Votes"]
-        rep_total_votes += state_vote_result["Rep_Votes"]
-        dem_total_votes += state_vote_result["Dem_Votes"]
+        rep_electoral_votes += state_result["Rep_Electoral_Votes"]
+        dem_electoral_votes += state_result["Dem_Electoral_Votes"]
+        rep_total_votes += state_result["Rep_Votes"]
+        dem_total_votes += state_result["Dem_Votes"]
     print(json.dumps(state_results,indent=4))
+    print(f"Electoral College (Dem-Rep)\n{dem_electoral_votes:,.0f}-{rep_electoral_votes:,.0f}\n")
+    print(f"Popular Vote (Dem-Rep)\n{dem_total_votes:,.0f} - {rep_total_votes:,.0f}")
         
 if __name__ == "__main__":
     main()
