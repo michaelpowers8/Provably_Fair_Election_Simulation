@@ -55,20 +55,43 @@ STATES_DATA = [
     ("Wyoming", 3, 470000, -43.4),
 ]
 
-TURNOUT = 0.7 # Percent voters
+TURNOUT = 0.65 # Percent voters
 MOMENTUM = 1.5 # Potential swing average at a national level
 MOMENTUM_VOLATILITY = 2
+MOMENTUM_DISTRIBUTION = np.random.normal(MOMENTUM,MOMENTUM_VOLATILITY)
 REP_CANDIDATE_ENERGY = -0.7 # How motivating republican candidate gets voter turnout. Higher number means more Republican turnout
 DEM_CANDIDATE_ENERGY = 0.4 # How motivating democrat candidate gets voter turnout. Higher number means more Democrat turnout
 CANDIDATE_VOLATILITY = 1.2
+REP_CANDIDATE_DISTRIBUTION = np.random.normal(REP_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)
+DEM_CANDIDATE_DISTRIBUTION = np.random.normal(DEM_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY))
+
+class Election_Results:
+    def __init__(self,
+        state_results:list[dict[str,str|float|int]],
+        winner:str,
+        rep_electoral_votes:int,
+        dem_electoral_votes:int,
+        rep_total_votes:int,
+        dem_total_votes:int,
+    ):
+        self.state_results = state_results
+        self.winner = winner
+        self.rep_electoral_votes:int = rep_electoral_votes
+        self.dem_electoral_votes:int = dem_electoral_votes
+        self.rep_total_votes:int = rep_total_votes
+        self.dem_total_votes:int = dem_total_votes
+    
+    def __str__():
+        return f"{self.dem_electoral_votes:,.0f} - {self.rep_electoral_votes:,.0f}"
 
 def process_state(state):
-    state_votes_cast = np.random.normal(state[2]*TURNOUT,state[2]*0.02)
-    margin = (np.random.normal(state[3],0.015)+ # Typical margin of error
-                np.random.normal(MOMENTUM,MOMENTUM_VOLATILITY)-
-                np.random.normal(REP_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)+
-                np.random.normal(DEM_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY))
+    state_votes_cast = max(np.random.normal(state[2]*TURNOUT,state[2]*0.1),0)
+    margin = (np.random.normal(state[3],0.04)+ # Typical margin of error
+                MOMENTUM_DISTRIBUTION-
+                REP_CANDIDATE_DISTRIBUTION+
+                DEM_CANDIDATE_DISTRIBUTION
     margin /= 100
+    margin = np.clip(margin,-0.999,0.999)
     if(margin > 0): # Democrat won state
         dem_pct = 0.5 + (margin/2)
         rep_pct = 0.5 - (margin/2)
@@ -88,8 +111,8 @@ def process_state(state):
         dem_pct = 0.5
         rep_votes = state_votes_cast//2
         dem_votes = rep_votes
-        dem_electoral_votes = 0
-        rep_electoral_votes = 0
+        dem_electoral_votes = state[1]/2
+        rep_electoral_votes = state[1]/2
         
     return {
         "State": state[0],
@@ -101,8 +124,7 @@ def process_state(state):
         "Rep_Electoral_Votes": rep_electoral_votes,
     }
 
-
-def main():
+def run_simulated_election():
     rep_electoral_votes = 0
     dem_electoral_votes = 0
     rep_total_votes = 0
@@ -115,9 +137,33 @@ def main():
         dem_electoral_votes += state_result["Dem_Electoral_Votes"]
         rep_total_votes += state_result["Rep_Votes"]
         dem_total_votes += state_result["Dem_Votes"]
-    print(json.dumps(state_results,indent=4))
-    print(f"Electoral College (Dem-Rep)\n{dem_electoral_votes:,.0f}-{rep_electoral_votes:,.0f}\n")
-    print(f"Popular Vote (Dem-Rep)\n{dem_total_votes:,.0f} - {rep_total_votes:,.0f}")
+    if rep_electoral_votes>=270:
+        winner = "Republican"
+    elif(dem_electoral_votes>=270):
+        winner = "Democrat"
+    else:
+        winner = "Tie"
+    return Election_Results(
+        state_results=state_results,
+        winner = winner,
+        rep_electoral_votes=rep_electoral_votes,
+        dem_electoral_votes=dem_electoral_votes,
+        rep_total_votes=rep_total_votes,
+        dem_total_votes=dem_total_votes
+    )
+        
+
+def main():
+    election_results = []
+    winners = {}
+    for _ in range(10_000):
+        election_results.append(run_simulated_election())
+        if(not(election_results[-1].winner in winners.keys())):
+            winners[election_results[-1].winner] = 1
+        else:
+            winners[election_results[-1].winner] = 1
+    print(json.dumps(winners,indent=4))
+    print(json.dumps(election_results, indent=4))
         
 if __name__ == "__main__":
     main()
