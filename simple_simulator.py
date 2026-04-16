@@ -55,11 +55,11 @@ STATES_DATA = [
 ]
 
 TURNOUT = 0.7 # Percent voters
-MOMENTUM = 3.6 # Potential swing average at a national level
-MOMENTUM_VOLATILITY = 0.6
-REP_CANDIDATE_ENERGY = 0 # How motivating republican candidate gets voter turnout. Higher number means more Republican turnout
-DEM_CANDIDATE_ENERGY = 0 # How motivating democrat candidate gets voter turnout. Higher number means more Democrat turnout
-CANDIDATE_VOLATILITY = 0.2
+MOMENTUM = 0.8 # Potential swing average at a national level
+MOMENTUM_VOLATILITY = 1
+REP_CANDIDATE_ENERGY = 0.1 # How motivating republican candidate gets voter turnout. Higher number means more Republican turnout
+DEM_CANDIDATE_ENERGY = 0.3 # How motivating democrat candidate gets voter turnout. Higher number means more Democrat turnout
+CANDIDATE_VOLATILITY = 0.3
 
 def main():
     state = STATES_DATA[2]
@@ -75,8 +75,8 @@ def main():
         dem_votes = round(state_votes_cast*dem_pct)
         rep_votes = state_votes_cast - dem_votes
     elif(margin < 0):
-        rep_pct = 0.5 + (margin/2)
-        dem_pct = 0.5 - (margin/2)
+        rep_pct = 0.5 - (margin/2)
+        dem_pct = 0.5 + (margin/2)
         rep_votes = round(state_votes_cast*rep_pct)
         dem_votes = state_votes_cast - rep_votes
     else:    
