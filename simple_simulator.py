@@ -1,70 +1,8 @@
+import os
 import json
-import random
-import numpy as np
-
-STATES_DATA = [
-    ("Alabama", 9, 3700000, -25.5),
-    ("Alaska", 3, 590000, -10.1),
-    ("Arizona", 11, 4400000, -0.1),
-    ("Arkansas", 6, 2300000, -27.6),
-    ("California", 54, 22000000, 29.2),
-    ("Colorado", 10, 4000000, 13.5),
-    ("Connecticut", 7, 2600000, 20.1),
-    ("DC", 3, 150000, 50),
-    ("Delaware", 3, 780000, 19.0),
-    ("Florida", 30, 14500000, -5.2),
-    ("Georgia", 16, 7600000, -0.5),
-    ("Hawaii", 4, 950000, 29.5),
-    ("Idaho", 4, 1450000, -30.8),
-    ("Illinois", 19, 8500000, 17.1),
-    ("Indiana", 11, 4800000, -16.0),
-    ("Iowa", 6, 2300000, -8.2),
-    ("Kansas", 6, 2200000, -14.7),
-    ("Kentucky", 8, 3400000, -25.9),
-    ("Louisiana", 8, 3200000, -18.6),
-    ("Maine", 4, 1250000, 9.1),
-    ("Maryland", 10, 4200000, 33.2),
-    ("Massachusetts", 11, 5100000, 33.1),
-    ("Michigan", 15, 7700000, 2.8),
-    ("Minnesota", 10, 4100000, 7.1),
-    ("Mississippi", 6, 2200000, -16.5),
-    ("Missouri", 10, 4400000, -15.4),
-    ("Montana", 4, 900000, -16.4),
-    ("Nebraska", 5, 1250000, -19.2),
-    ("Nevada", 6, 2000000, 2.4),
-    ("New Hampshire", 4, 1100000, 7.4),
-    ("New Jersey", 14, 6400000, 15.9),
-    ("New Mexico", 5, 1400000, 10.8),
-    ("New York", 28, 12600000, 23.1),
-    ("North Carolina", 16, 7300000, -1.4),
-    ("North Dakota", 3, 650000, -33.3),
-    ("Ohio", 17, 8200000, -8.0),
-    ("Oklahoma", 7, 2400000, -33.1),
-    ("Oregon", 8, 3200000, 16.0),
-    ("Pennsylvania", 19, 8800000, 0.8),
-    ("Rhode Island", 4, 820000, 20.8),
-    ("South Carolina", 9, 3800000, -11.7),
-    ("South Dakota", 3, 700000, -26.2),
-    ("Tennessee", 11, 4700000, -23.3),
-    ("Texas", 40, 17600000, -5.6),
-    ("Utah", 6, 1900000, -20.5),
-    ("Vermont", 3, 580000, 35.1),
-    ("Virginia", 13, 6000000, 10.1),
-    ("Washington", 12, 5400000, 19.2),
-    ("West Virginia", 4, 1200000, -38.9),
-    ("Wisconsin", 10, 4400000, 0.9),
-    ("Wyoming", 3, 470000, -43.4),
-]
-
-TURNOUT = 0.65 # Percent voters
-MOMENTUM = -3 # Potential swing average at a national level
-MOMENTUM_VOLATILITY = 2
-MOMENTUM_DISTRIBUTION = np.random.normal(MOMENTUM,MOMENTUM_VOLATILITY)
-REP_CANDIDATE_ENERGY = 3 # How motivating republican candidate gets voter turnout. Higher number means more Republican turnout
-DEM_CANDIDATE_ENERGY = 0 # How motivating democrat candidate gets voter turnout. Higher number means more Democrat turnout
-CANDIDATE_VOLATILITY = 2
-REP_CANDIDATE_DISTRIBUTION = np.random.normal(REP_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)
-DEM_CANDIDATE_DISTRIBUTION = np.random.normal(DEM_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)
+from typing import Any
+from datetime import datetime
+from cryptographic_random import CryptographicRandom
 
 class Election_Results:
     def __init__(self,
@@ -87,93 +25,161 @@ class Election_Results:
         f"Electoral College (Democrat - Republican):\n{self.dem_electoral_votes:,.0f} - {self.rep_electoral_votes:,.0f}\n\n"\
         f"Popular Vote (Democratic - Republican)\n{self.dem_total_votes:,.0f} - {self.rep_total_votes:,.0f}\n\n"
 
-def process_state(state):
-    state_votes_cast = max(np.random.normal(state[2]*TURNOUT,state[2]*0.1),0)
-    margin = (np.random.normal(state[3],0.02)+ # Typical margin of error
-                MOMENTUM_DISTRIBUTION-
-                REP_CANDIDATE_DISTRIBUTION+
-                DEM_CANDIDATE_DISTRIBUTION
-             )
-    margin /= 100
-    margin = np.clip(margin,-0.999,0.999)
-    if(margin > 0): # Democrat won state
-        dem_pct = 0.5 + (margin/2)
-        rep_pct = 0.5 - (margin/2)
-        dem_votes = round(state_votes_cast*dem_pct)
-        rep_votes = int(state_votes_cast - dem_votes)
-        dem_electoral_votes = state[1]
+class Election_Simulator:
+    def __init__(self):
+        self.load_configuration()
+        self.randomizer = CryptographicRandom(
+                key=self.configuration.get("Random_Key",None), 
+                msg=self.configuration.get("Random_Message",None),
+                nonce=self.configuration.get("Nonce",None)
+            )
+        self.randomize_configuration()
+    
+    def load_configuration(self):
+        try:
+            config_path:str = "config.json"
+            if(not(os.path.exists(config_path))):
+                self.configuration = None
+                return None
+            with open(config_path,'r',encoding='utf-8') as file:
+                configuration = json.load(file)
+            if(not(self._verify_configuration(configuration=configuration))):
+                self.configuration = None
+                return None
+            self.configuration:dict|None = configuration
+        except:
+            self.configuration = None
+            return None
+
+    def _verify_configuration(self,configuration:dict|Any):
+        if(not(isinstance(configuration,dict))):
+            return False
+        required_keys:list[str] = [
+            "STATES_DATA", "TURNOUT", "MOMENTUM", "MOMENTUM_VOLATILITY", "MOMENTUM_DISTRIBUTION",
+            "REP_CANDIDATE_ENERGY", "DEM_CANDIDATE_ENERGY", "CANDIDATE_VOLATILITY", 
+            "REP_CANDIDATE_DISTRIBUTION", "DEM_CANDIDATE_DISTRIBUTION"
+        ]
+        for key in required_keys:
+            if(not(key in configuration.keys())):
+                return False
+        return True
+
+    def randomize_configuration(self):
+        self.configuration.update(
+            MOMENTUM_DISTRIBUTION=self.randomizer.normal_random(mean=self.configuration["MOMENTUM"],standard_deviation=self.configuration["MOMENTUM_VOLATILITY"]),
+            REP_CANDIDATE_DISTRIBUTION=self.randomizer.normal_random(mean=self.configuration["REP_CANDIDATE_ENERGY"],standard_deviation=self.configuration["CANDIDATE_VOLATILITY"]), 
+            DEM_CANDIDATE_DISTRIBUTION=self.randomizer.normal_random(mean=self.configuration["DEM_CANDIDATE_ENERGY"],standard_deviation=self.configuration["CANDIDATE_VOLATILITY"]),
+            TURNOUT=(self.randomizer.random() * 0.35) + 0.45 
+        )
+
+    def process_state(self,state):
+        state_votes_cast = max(self.randomizer.normal_random(mean=state[2]*self.configuration["TURNOUT"],standard_deviation=state[2]*0.1),0)
+        margin = (self.randomizer.normal_random(mean=state[3],standard_deviation=0.02)+ # Typical margin of error
+                    self.configuration["MOMENTUM_DISTRIBUTION"]-
+                    self.configuration["REP_CANDIDATE_DISTRIBUTION"]+
+                    self.configuration["DEM_CANDIDATE_DISTRIBUTION"]
+                )
+        margin /= 100
+        margin = max(-0.999, min(0.999, margin))
+        if(margin > 0): # Democrat won state
+            dem_pct = 0.5 + (margin/2)
+            rep_pct = 0.5 - (margin/2)
+            dem_votes = round(state_votes_cast*dem_pct)
+            rep_votes = int(state_votes_cast - dem_votes)
+            dem_electoral_votes = state[1]
+            rep_electoral_votes = 0
+        elif(margin < 0):
+            rep_pct = 0.5 - (margin/2)
+            dem_pct = 0.5 + (margin/2)
+            rep_votes = round(state_votes_cast*rep_pct)
+            dem_votes = int(state_votes_cast - rep_votes)
+            dem_electoral_votes = 0
+            rep_electoral_votes = state[1]
+        else:    
+            rep_pct = 0.5
+            dem_pct = 0.5
+            rep_votes = state_votes_cast//2
+            dem_votes = rep_votes
+            dem_electoral_votes = state[1]/2
+            rep_electoral_votes = state[1]/2
+            
+        return {
+            "State": state[0],
+            "Dem_Votes": dem_votes,
+            "Rep_Votes": rep_votes,
+            "Dem_Percent": dem_pct,
+            "Rep_Percent": rep_pct,
+            "Dem_Electoral_Votes": dem_electoral_votes,
+            "Rep_Electoral_Votes": rep_electoral_votes,
+        }
+
+    def run_simulated_election(self) -> Election_Results:
         rep_electoral_votes = 0
-    elif(margin < 0):
-        rep_pct = 0.5 - (margin/2)
-        dem_pct = 0.5 + (margin/2)
-        rep_votes = round(state_votes_cast*rep_pct)
-        dem_votes = int(state_votes_cast - rep_votes)
         dem_electoral_votes = 0
-        rep_electoral_votes = state[1]
-    else:    
-        rep_pct = 0.5
-        dem_pct = 0.5
-        rep_votes = state_votes_cast//2
-        dem_votes = rep_votes
-        dem_electoral_votes = state[1]/2
-        rep_electoral_votes = state[1]/2
+        rep_total_votes = 0
+        dem_total_votes = 0
+        state_results = []
+        for state in self.configuration["STATES_DATA"]:
+            state_result = self.process_state(state)
+            state_results.append(state_result)
+            rep_electoral_votes += state_result["Rep_Electoral_Votes"]
+            dem_electoral_votes += state_result["Dem_Electoral_Votes"]
+            rep_total_votes += state_result["Rep_Votes"]
+            dem_total_votes += state_result["Dem_Votes"]
+        if(rep_electoral_votes >= 270):
+            winner = "Republican"
+        elif(dem_electoral_votes >= 270):
+            winner = "Democrat"
+        elif((rep_electoral_votes == 269) and (dem_electoral_votes == 269)):
+            winner = "Tie"
+        else:
+            winner = "None"
+        return Election_Results(
+            state_results=state_results,
+            winner = winner,
+            rep_electoral_votes=rep_electoral_votes,
+            dem_electoral_votes=dem_electoral_votes,
+            rep_total_votes=rep_total_votes,
+            dem_total_votes=dem_total_votes
+        )
         
-    return {
-        "State": state[0],
-        "Dem_Votes": dem_votes,
-        "Rep_Votes": rep_votes,
-        "Dem_Percent": dem_pct,
-        "Rep_Percent": rep_pct,
-        "Dem_Electoral_Votes": dem_electoral_votes,
-        "Rep_Electoral_Votes": rep_electoral_votes,
-    }
-
-def run_simulated_election():
-    global MOMENTUM_DISTRIBUTION,REP_CANDIDATE_DISTRIBUTION,DEM_CANDIDATE_DISTRIBUTION
-    MOMENTUM_DISTRIBUTION = np.random.normal(MOMENTUM,MOMENTUM_VOLATILITY)
-    REP_CANDIDATE_DISTRIBUTION = np.random.normal(REP_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)
-    DEM_CANDIDATE_DISTRIBUTION = np.random.normal(DEM_CANDIDATE_ENERGY,CANDIDATE_VOLATILITY)
-    rep_electoral_votes = 0
-    dem_electoral_votes = 0
-    rep_total_votes = 0
-    dem_total_votes = 0
-    state_results = []
-    for state in STATES_DATA:
-        state_result = process_state(state)
-        state_results.append(state_result)
-        rep_electoral_votes += state_result["Rep_Electoral_Votes"]
-        dem_electoral_votes += state_result["Dem_Electoral_Votes"]
-        rep_total_votes += state_result["Rep_Votes"]
-        dem_total_votes += state_result["Dem_Votes"]
-    if(rep_electoral_votes>=270):
-        winner = "Republican"
-    elif(dem_electoral_votes>=270):
-        winner = "Democrat"
-    else:
-        winner = "Tie"
-    return Election_Results(
-        state_results=state_results,
-        winner = winner,
-        rep_electoral_votes=rep_electoral_votes,
-        dem_electoral_votes=dem_electoral_votes,
-        rep_total_votes=rep_total_votes,
-        dem_total_votes=dem_total_votes
-    )
-        
-
 def main():
-    election_results = []
+    simulator:Election_Simulator = Election_Simulator()
+    election_results:list[Election_Results] = []
     winners = {}
-    for _ in range(10_000):
-        election_results.append(run_simulated_election())
+    for election_round in range(1_000):
+        election_results.append(simulator.run_simulated_election())
         if(not(election_results[-1].winner in winners.keys())):
             winners[election_results[-1].winner] = 1
         else:
             winners[election_results[-1].winner] += 1
-    print(json.dumps(winners,indent=4))
-    # print(election_results)
-    print(election_results[0])
-    print(json.dumps(election_results[0].state_results, indent=4))
+        simulator.randomize_configuration()
+        if(election_round % 50_000 == 0):
+            print(f"{datetime.now()} Rounds Done: {election_round:,.0f}")
+    
+    total_rep_electoral_votes:int = 0
+    total_rep_popular_votes:int = 0
+    total_dem_electoral_votes:int = 0
+    total_dem_popular_votes:int = 0
+    for result in election_results:
+        total_rep_electoral_votes += result.rep_electoral_votes
+        total_rep_popular_votes += result.rep_total_votes
+        total_dem_electoral_votes += result.dem_electoral_votes
+        total_dem_popular_votes += result.dem_total_votes
+    avg_rep_electoral_votes:float = total_rep_electoral_votes / len(election_results)
+    avg_dem_electoral_votes:float = total_dem_electoral_votes / len(election_results)
+    avg_rep_popular_votes:float = total_rep_popular_votes / len(election_results)
+    avg_dem_popular_votes:float = total_dem_popular_votes / len(election_results)
+
+    print(
+        f"Election Winners (Democrat - Republican - Tie - None)\n"
+        f"""{winners.get("Democrat",0)} - {winners.get("Republican",0)} - {winners.get("Tie",0)} - {winners.get("None",0)}\n\n"""
+        f"Average Electoral College (Democrat - Republican)\n"
+        f"{avg_dem_electoral_votes:.3f} - {avg_rep_electoral_votes:.3f}\n\n"
+        f"Average Popular Vote (Democrat - Republican)\n"
+        f"{avg_dem_popular_votes:,.3f} - {avg_rep_popular_votes:,.3f}\n\n"
+        f"{simulator.randomizer.__repr__()}"
+    )
         
 if __name__ == "__main__":
     main()

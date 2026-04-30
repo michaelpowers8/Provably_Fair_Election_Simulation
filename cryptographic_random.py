@@ -101,6 +101,18 @@ class CryptographicRandom():
                 x[i], x[j] = x[j], x[i]
         return x
     
+    def normal_random(self, mean:float|int, standard_deviation:float|int):
+        if(not(isinstance(mean,(float,int)))):
+            return 0
+        
+        if(not(isinstance(standard_deviation,(float,int)))):
+            return 0
+
+        u1:float = self.random()
+        u2:float = self.random()
+        z:float = math.sqrt(-2 * math.log(u1)) * (math.cos(2 * math.pi * u2))
+        return mean + (standard_deviation * z)
+
     def randrange(self, start: int, stop: int = None, step: int = 1) -> int:
         """Python-compatible randrange implementation"""
         if stop is None:
